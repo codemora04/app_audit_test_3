@@ -1602,7 +1602,7 @@ downloadScoreBtn?.addEventListener("click", async () => {
     // SHEET 2 : RAPPORT
     // =========================
     const reportRows = [
-      ["Zone", "Sous-zone", "Rubrique", "Question", "Status", "Commentaire", "Action Correctives", "Responsable", "Delai"]
+      ["Zone", "Sous-zone", "Rubrique", "Question", "Status", "Commentaire", "Action Correctives","Actions préventives", "Responsable", "Delai"]
     ];
 
     for (const [zName, zoneData] of Object.entries(auditData)) {
