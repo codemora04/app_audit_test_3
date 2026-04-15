@@ -1552,7 +1552,8 @@ downloadScoreBtn?.addEventListener("click", async () => {
           "Question": "Remarques générales",
           "Status": "Information",
           "Commentaire": remarkAns.comment.trim(),
-          "Action Correctives": "",
+          "Actions Correctives": "",
+          "Actions préventives": "",
           "Responsable": "",
           "Delai": ""
         });
