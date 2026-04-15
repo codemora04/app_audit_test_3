@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Responsable</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="logo5.png">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .subzone-item:hover {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    }
+
+    /* SPEECH BUBBLE CSS */
+    .speech-bubble {
+      position: absolute;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      pointer-events: none;
+      /* Let clicks pass through */
+      min-width: 150px;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -8px;
+      border-width: 8px;
+      border-style: solid;
+      border-color: white transparent transparent transparent;
+    }
+
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -9px;
+      border-width: 9px;
+      border-style: solid;
+      border-color: #e2e8f0 transparent transparent transparent;
+      z-index: -1;
+    }
+
+    .bubble-title {
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+      font-size: 14px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      text-align: center;
+    }
+
+    .bubble-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .bubble-list li {
+      font-size: 12px;
+      color: #475569;
+      padding: 3px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bubble-list li::before {
+      content: "•";
+      color: #3b82f6;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<script src="./pwa.js"></script>
+
+<body>
+  <div class="container" style="max-width: 800px;">
+    <h1>Tableau de Bord des Audits</h1>
+    <div class="user-box" style="margin-bottom: 20px;">
+      <p id="operatorName" class="success"></p>
+    </div>
+
+    <!-- Filtre Entreprise -->
+    <div style="margin-bottom: 16px;">
+      <label for="companySelect" style="display:block; margin-bottom:6px; font-weight:600;">Entreprise :</label>
+      <select id="companySelect">
+        <option value="">-- Choisir une entreprise --</option>
+        <option value="BALTIMAR">Baltimar</option>
+        <option value="REVEY">Revey</option>
+      </select>
+    </div>
+
+    <!-- Filtre Atelier (Revey uniquement) -->
+    <div id="atelierContainer" style="margin-bottom: 16px; display:none;">
+      <label for="atelierSelect" style="display:block; margin-bottom:6px; font-weight:600;">Atelier :</label>
+      <select id="atelierSelect">
+        <option value="">-- Choisir un atelier --</option>
+      </select>
+    </div>
+
+    <!-- Filtre Audit -->
+    <div style="margin-bottom: 16px;">
+      <label for="auditSelect" style="display:block; margin-bottom:6px; font-weight:600;">Type d'audit :</label>
+      <select id="auditSelect" disabled>
+        <option value="">-- Sélectionner une entreprise d'abord --</option>
+      </select>
+    </div>
+
+
+    <!-- Safety Legend -->
+
+
+    <div id="chartContainer" class="hidden"
+      style="margin-top: 30px; background: var(--surface-color); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--surface-border); position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0; color: var(--text-main); flex-grow: 1; text-align: center;">Score par Zone (%)</h3>
+        <button id="downloadBtn" title="Télécharger comme image"
+          style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 5px; display: flex; align-items: center;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
+      </div>
+      <canvas id="scoreChart"></canvas>
+    </div>
+
+    <p id="noDataMessage" class="hidden" style="text-align: center; margin-top: 20px; color: #f59e0b;">Aucune donnée
+      d'audit trouvée pour cette sélection.</p>
+
+    <div id="summaryTableContainer" class="hidden"
+      style="margin-top: 30px; background: white; padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--surface-border);">
+      <h3 style="text-align:center; margin-bottom: 20px; color: var(--text-main);">Tableau Récapitulatif</h3>
+      <table class="questions-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Zone</th>
+            <th style="text-align:center;">Score (%)</th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody"></tbody>
+      </table>
+    </div>
+
+
+
+    <div class="btn-container" style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px;">
+      <a href="accueil.html" class="btn-retour" style="text-decoration: none; text-align: center;">← Retour à l'accueil</a>
+      <button class="btn-retour-rouge" id="logoutBtn" style="width: 100%;">Déconnexion</button>
+    </div>
+  </div>
+
+  <div id="zoneSpeechBubble" class="speech-bubble hidden"></div>
+
+  <script type="module" src="./visualisation.js"></script>
+</body>
+
+</html>

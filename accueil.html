@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accueil - Système d'Audit</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="logo3.png">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <script src="./pwa.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Système d'Audit</h1>
+    <div class="user-box">
+      <div id="identificationForm">
+        <div class="user-note-banner">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="info-icon">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div>
+            <strong>Attention :</strong>
+            <span>Veuillez entrer votre nom sous le format <b>nom prénom</b>.</span>
+          </div>
+        </div>
+        <input type="text" id="username" placeholder="Ex: benali sara" autocomplete="off">
+        <button id="validateUserBtn" class="btn-retour" type="button">Valider</button>
+      </div>
+      <p id="errorMessage" class="error"></p>
+      <p id="successMessage" class="success"></p>
+    </div>
+    <div class="logos" id="logosSection" style="display:none;">
+      <button class="logo-btn" id="baltimarBtn" disabled title="Audit Baltimar">
+        <img src="logo1.png" width="150" alt="Baltimar">
+      </button>
+      <button class="logo-btn" id="reveyBtn" disabled title="Audit Revey">
+        <img src="logo2.png" width="150" alt="Revey">
+      </button>
+    </div>
+    <div id="extraButtons" style="display:none; margin-top: 20px; text-align: center;">
+      <button id="statsBtn" class="btn-retour" style="background-color: #077a3b; width: 100%; max-width: 320px;">
+        Visualiser des Graphiques
+      </button>
+    </div>
+    <div class="btn-container">
+      <button class="btn-retour" id="logoutBtn">Déconnexion</button>
+    </div>
+  </div>
+  <script type="module">
+    import { supabase } from "./supabase.js";
+    import { clearAuditProgress } from "./utils.js";
+
+    // cette fonction verifie si l'utilisateur est connecte pour continuer a charger sinon redirige le vers login.html
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) window.location.href = "login.html";
+
+    // Recupertion des elements HTML
+    const identificationForm = document.getElementById("identificationForm");
+    const usernameInput = document.getElementById("username");
+    const validateUserBtn = document.getElementById("validateUserBtn");
+    const errorMessage = document.getElementById("errorMessage");
+    const successMessage = document.getElementById("successMessage");
+    const baltimarBtn = document.getElementById("baltimarBtn");
+    const reveyBtn = document.getElementById("reveyBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const logosSection = document.getElementById("logosSection");
+    const extraButtons = document.getElementById("extraButtons");
+    const statsBtn = document.getElementById("statsBtn");
+    function setError(msg) {
+      errorMessage.textContent = msg || "";
+      successMessage.textContent = "";
+    }
+    function setSuccess(msg) {
+      successMessage.textContent = msg || "";
+      errorMessage.textContent = "";
+    }
+    function enableLogos() {
+      logosSection.style.display = "flex";
+      extraButtons.style.display = "block";
+      baltimarBtn.disabled = false;
+      reveyBtn.disabled = false;
+      identificationForm.style.display = "none";
+    }
+    function disableLogos() {
+      logosSection.style.display = "none";
+      extraButtons.style.display = "none";
+      baltimarBtn.disabled = true;
+      reveyBtn.disabled = true;
+      identificationForm.style.display = "block";
+    }
+
+    // Verification de sessions existante
+    const savedUsername = sessionStorage.getItem("audit_username");
+    const savedRole = sessionStorage.getItem("audit_user_role");
+    if (savedUsername) {
+      if (savedRole === "responsable") {
+        window.location.href = "visualisation.html";
+      } else if (savedRole === "auditeur") {
+        usernameInput.value = savedUsername;
+        enableLogos();
+        setSuccess("Bienvenue " + savedUsername + " !");
+      } else {
+        disableLogos();
+      }
+    } else {
+      disableLogos();
+    }
+    // Le bouton de validation du username
+    validateUserBtn.addEventListener("click", async () => {
+      let username = usernameInput.value.trim().replace(/\s+/g, ' ');
+
+      if (!username) {
+        setError("Veuillez entrer votre nom utilisateur.");
+        disableLogos();
+        return;
+      }
+
+      if (username.split(/\s+/).length < 2) {
+        setError("Respectez l'ordre : nom prénom.");
+        disableLogos();
+        return;
+      }
+
+      console.log("Checking user in Supabase:", username);
+      const { data, error } = await supabase
+        .from("authorized_users")
+        .select("username, role")
+        .ilike("username", username)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Supabase Error during user check:", error);
+      }
+
+      console.log("Returned data from Supabase:", data);
+
+      if (!data) {
+        // Debugging: fetch all users to help the user spot trailing spaces or typos
+        const { data: allUsers } = await supabase.from("authorized_users").select("username");
+        console.log("Liste exacte des noms dans la base (avec les espaces cachés ou accents) :", allUsers);
+      }
+
+      if (error || !data) {
+        setError("Nom utilisateur invalide.");
+        disableLogos();
+        return;
+      }
+
+      username = data.username; // On utilise la casse exacte de la DB
+      localStorage.setItem("username", username);
+      sessionStorage.setItem("audit_username", username);
+      sessionStorage.setItem("audit_user_role", data.role || "auditeur");
+
+      if (data.role === "responsable") {
+        window.location.href = "visualisation.html";
+      } else if (data.role === "auditeur") {
+        enableLogos();
+        setSuccess("Bienvenue " + username + "!");
+      } else {
+        disableLogos();
+        setError("Rôle non reconnu.");
+      }
+    });
+
+
+    baltimarBtn.addEventListener("click", () => {
+      window.location.href = "baltimar.html";
+    });
+
+    reveyBtn.addEventListener("click", () => {
+      window.location.href = "revey.html";
+    });
+
+    statsBtn.addEventListener("click", () => {
+      window.location.href = "visualisation.html";
+    });
+
+
+    logoutBtn.addEventListener("click", async () => {
+      sessionStorage.clear();
+      clearAuditProgress();
+      await supabase.auth.signOut();
+      window.location.href = "login.html";
+    });
+  </script>
+
+</body>
+
+</html>

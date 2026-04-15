@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BALTIMAR</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="logo1.png">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="./pwa.js"></script>
+</head>
+
+<body>
+  <div class="container">
+        <!-- Logo -->
+    <img src="logo1.png" 
+         alt="Logo Baltimar" 
+         class="logo"
+         width="150" height="90">
+    <br><br>
+    
+    <!-- Progress Bar -->
+    <div id="progress-root" class="progress-container hidden">
+      <div class="progress-info">
+        <span id="progress-label">Progression de l'audit</span>
+        <span id="progress-percent">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="progress-fill" class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- Step 1:choix de l'audit -->
+    <label for="audit">Type d'audit:</label>
+    <select id="audit">
+      <option value="">--Choisir--</option>
+    </select>
+
+    <!-- Step 2:choix de la zone -->
+    <div id="zone-container" class="hidden">
+      <label for="zone">Zone:</label>
+      <select id="zone">
+        <option value="">--Choisir--</option>
+      </select>
+    </div>
+
+    <!-- Step 3: choix de la sous-zones -->
+    <div id="souszone-container" class="hidden">
+      <label for="souszone">Sous-zone:</label>
+      <select id="souszone">
+        <option value="">--Choisir--</option>
+      </select>
+    </div>
+
+    <!-- Step 4:affichage des rubriques -->
+    <div id="rubrique-container" class="hidden">
+      <h3>Rubriques :</h3>
+      <div id="rubriques-list" class="accordion"></div>
+      
+      <!-- Summary Table -->
+      <div id="summary-section" class="summary-container hidden">
+        <h3 class="summary-title">Récapitulatif des Scores</h3>
+        <table class="summary-table">
+          <tbody id="summary-body"></tbody>
+        </table>
+      </div>
+
+      <!-- PDF button -->
+      <button id="downloadPdf" class="btn-pdf hidden">Télécharger le rapport de l'audit</button>
+      <button id="downloadScoreBtn" class="btn-pdf hidden">Télécharger Score et rapport (Excel)</button>
+    </div>
+    <div class="btn-container">
+        <a href="accueil.html" class="btn-retour">
+            ← Retour à l'accueil
+        </a>
+    </div>
+  </div>
+
+  <script type="module" src="./baltimar.js"></script>
+</body>
+</html>
