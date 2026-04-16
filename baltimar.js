@@ -410,7 +410,7 @@ function showSummary() {
     let globalGood = 0;
     let globalTotal = 0;
     const auditName = auditSelect.value;
-    const isSafety = audit.includes("Safety");
+    const isSafety = auditName.includes("Safety");
 
     rubriques.forEach(header => {
         const title = header.textContent.replace(/[▶▼0-9]/g, "").trim();
@@ -575,9 +575,8 @@ async function saveAnswer({ rubriqueTitle, question, statusLabel, comment, file 
     .upsert(
       {
         session_id: currentSessionId,
-        user_id: sessionData?.user_id,   // ✅ FIX
-        zone: sessionData?.zone,         // ✅ FIX
-        // audit_it: currentSessionId,   // ⚠️ if this is your audit FK
+        user_id: sessionData?.user_id,   
+        zone: sessionData?.zone,         
         rubrique: rubriqueTitle,
         question: question,
         status: statusLabel,
@@ -1516,12 +1515,14 @@ downloadScoreBtn?.addEventListener("click", async () => {
           if (status === "Good" || status === "Oui") isGood = true;
         }
       }
-
-      // Update counters (optional but kept for internal logic if needed)
-      if (status === "Good" || status === "Oui") stats.oui++;
-      else if (status === "Non applicable") stats.na++;
-      else if (status !== "") stats.non++;
-      else stats.vide++;
+      if (status === "Good" || status === "Oui") 
+        stats.oui++;
+      else if (status === "Non applicable") 
+        stats.na++;
+      else if (status !== "") 
+        stats.non++;
+      else 
+        stats.vide++;
 
       return { isGood, isApplicable };
     }
@@ -1547,18 +1548,27 @@ downloadScoreBtn?.addEventListener("click", async () => {
       let zGood = 0;
       let zTotal = 0;
 
-      const isDirect = Array.isArray(zoneData);
+      const isGWP = audit === "Audit GWP-Agence" || audit === "Audit GWP-Usines";
+      const values = typeof zoneData === "object" && zoneData !== null ? Object.values(zoneData) : [];
+      const zoneIsDirectQuestions = Array.isArray(zoneData);
+      const zoneIsDirectRubriques = values.length > 0 && values.every(v => Array.isArray(v));
 
-      if (isDirect) {
-        zoneData.forEach(q => {
-          const key = `${zName}|_direct|Questions|${q}`;
-          const { isGood, isApplicable } = evalAnswer(answerMap[key]);
+      if (isGWP || zoneIsDirectQuestions || zoneIsDirectRubriques) {
+        const rubriquesObj = Array.isArray(zoneData)
+          ? { "Questions": zoneData }
+          : zoneData;
+          
+        for (const [rName, questions] of Object.entries(rubriquesObj)) {
+          (questions || []).forEach(q => {
+            const key = `${zName}|_direct|${rName}|${q}`;
+            const { isGood, isApplicable } = evalAnswer(answerMap[key]);
 
-          if (isApplicable) {
-            zTotal++; totalQ++;
-            if (isGood) { zGood++; totalGood++; }
-          }
-        });
+            if (isApplicable) {
+              zTotal++; totalQ++;
+              if (isGood) { zGood++; totalGood++; }
+            }
+          });
+        }
 
         const zScore = zTotal ? Math.round((zGood / zTotal) * 100) : 0;
         scoreRows.push([`Zone: ${zName}`, `${zScore}%`]);
@@ -1602,30 +1612,39 @@ downloadScoreBtn?.addEventListener("click", async () => {
     // SHEET 2 : RAPPORT
     // =========================
     const reportRows = [
-      ["Zone", "Sous-zone", "Rubrique", "Question", "Status", "Commentaire", "Actions Correctives","Actions préventives", "Responsable", "Delai"]
+      ["Zone", "Sous-zone", "Rubrique", "Question", "Status", "Commentaire", "Action Correctives", "Responsable", "Delai"]
     ];
 
     for (const [zName, zoneData] of Object.entries(auditData)) {
 
-      const isDirect = Array.isArray(zoneData);
+      const isGWP = audit === "Audit GWP-Agence" || audit === "Audit GWP-Usines";
+      const values = typeof zoneData === "object" && zoneData !== null ? Object.values(zoneData) : [];
+      const zoneIsDirectQuestions = Array.isArray(zoneData);
+      const zoneIsDirectRubriques = values.length > 0 && values.every(v => Array.isArray(v));
 
-      if (isDirect) {
-        zoneData.forEach(q => {
-          const key = `${zName}|_direct|Questions|${q}`;
-          const ans = answerMap[key];
+      if (isGWP || zoneIsDirectQuestions || zoneIsDirectRubriques) {
+        const rubriquesObj = Array.isArray(zoneData)
+          ? { "Questions": zoneData }
+          : zoneData;
+          
+        for (const [rName, questions] of Object.entries(rubriquesObj)) {
+          (questions || []).forEach(q => {
+            const key = `${zName}|_direct|${rName}|${q}`;
+            const ans = answerMap[key];
 
-          reportRows.push([
-            zName,
-            "",
-            "Questions",
-            q,
-            ans?.status || "",
-            ans?.comment || "",
-            "",
-            "",
-            ""
-          ]);
-        });
+            reportRows.push([
+              zName,
+              "",
+              rName,
+              q,
+              ans?.status || "",
+              ans?.comment || "",
+              "",
+              "",
+              ""
+            ]);
+          });
+        }
 
         // ✅ AJOUT REMARQUE "AUTRES" (DIRECT)
         const remarkKey = `${zName}|_direct|Autres|Remarques`;
