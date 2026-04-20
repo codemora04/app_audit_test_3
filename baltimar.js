@@ -781,7 +781,7 @@ function showRubriques(rubriquesObj, existingAnswers = []) {
         </td>
 
         <td>
-          <input type="file" name="image_0_${qIndex}" accept="image/*" />
+          <input type="file" name="image_0_${qIndex}" accept="image/* capture="environment" " />
         </td>
       `;
 
@@ -883,7 +883,7 @@ function showRubriques(rubriquesObj, existingAnswers = []) {
           </td>
 
           <td>
-            <input type="file" name="image_${index}_${qIndex}" accept="image/*" />
+            <input type="file" name="image_${index}_${qIndex}" accept="image/* capture="environment" " />
           </td>
         `;
 
